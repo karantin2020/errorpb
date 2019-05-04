@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package errorpb;
+
+// Error describes response if service responses with error
+message Error {
+  int32           code    = 1;
+  string          message = 2;
+  repeated string details = 3;
+};
