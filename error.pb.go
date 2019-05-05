@@ -5,10 +5,11 @@ package errorpb
 
 import (
 	fmt "fmt"
-	_ "github.com/gogo/protobuf/gogoproto"
-	proto "github.com/gogo/protobuf/proto"
 	io "io"
 	math "math"
+
+	_ "github.com/gogo/protobuf/gogoproto"
+	proto "github.com/gogo/protobuf/proto"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -29,7 +30,7 @@ type Error struct {
 	Details []string `protobuf:"bytes,3,rep,name=details,proto3" json:"details"`
 }
 
-func (m *Error) Reset()         { *m = Error{} }
+func (m *Error) Reset()         { *m = Error{Details: []string{}} }
 func (m *Error) String() string { return proto.CompactTextString(m) }
 func (*Error) ProtoMessage()    {}
 func (*Error) Descriptor() ([]byte, []int) {

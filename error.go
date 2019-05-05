@@ -44,15 +44,15 @@ func FromError(err error) (*Error, bool) {
 	}); ok {
 		return se.GRPCStatus(), true
 	}
-	return &Error{Code: int32(codes.Unknown), Message: err.Error()}, false
+	return &Error{Code: int32(codes.Unknown), Message: err.Error(), Details: []string{}}, false
 }
 
-// NewError returns new error
-func NewError(c codes.Code, msg string, details ...string) error {
+// New returns new error
+func New(c codes.Code, msg string, details ...string) error {
 	if c == codes.OK {
 		return nil
 	}
-	err := &Error{Code: int32(c), Message: msg, Details: details}
+	err := &Error{Code: int32(c), Message: msg, Details: append([]string{}, details...)}
 	return (*statusError)(err)
 }
 
