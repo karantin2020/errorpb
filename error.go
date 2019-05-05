@@ -7,44 +7,57 @@ import (
 	"net/http"
 
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
-type statusError Error
+type statusError struct {
+	s *Status
+}
 
 func (se *statusError) Error() string {
-	p := (*Error)(se)
-	return fmt.Sprintf("rpc error: code = %s desc = %s", codes.Code(p.Code), p.Message)
+	return fmt.Sprintf("rpc error: code = %s desc = %s", se.Code(), se.Message())
 }
 
-func (se *statusError) GRPCStatus() *Error {
-	return (*Error)(se)
+// GRPCStatus implements interface{ GRPCStatus() *status.Status }
+func (se *statusError) GRPCStatus() *status.Status {
+	return status.New(se.Code(), se.Message())
 }
 
-// Err returns Error as error interface
-func (m *Error) Err() error {
+// Code returns codes.Code
+func (se *statusError) Code() codes.Code {
+	m := (*Status)(se.s)
+	return codes.Code(m.Code)
+}
+
+// Message returns codes.Code
+func (se *statusError) Message() string {
+	m := (*Status)(se.s)
+	return m.Message
+}
+
+// Err returns error interface
+func (m *Status) Err() error {
 	if codes.Code(m.Code) == codes.OK {
 		return nil
 	}
-	return (*statusError)(m)
+	return &statusError{m}
 }
 
-// WithDetails adds detail info to m *Error
-func (m *Error) WithDetails(d string) *Error {
+// WithDetails adds detail info to m *Status
+func (m *Status) WithDetails(d string) *Status {
 	m.Details = append(m.Details, d)
 	return m
 }
 
-// FromError returns *Error from err
-func FromError(err error) (*Error, bool) {
+// FromError returns *Status from err
+func FromError(err error) (*Status, bool) {
 	if err == nil {
-		return &Error{Code: int32(codes.OK)}, true
+		return &Status{Code: int32(codes.OK), Details: []string{}}, true
 	}
-	if se, ok := err.(interface {
-		GRPCStatus() *Error
-	}); ok {
-		return se.GRPCStatus(), true
+	if se, ok := err.(*statusError); ok {
+		return se.s, true
 	}
-	return &Error{Code: int32(codes.Unknown), Message: err.Error(), Details: []string{}}, false
+	return &Status{Code: int32(codes.Unknown), Message: err.Error(), Details: []string{}}, false
 }
 
 // New returns new error
@@ -52,8 +65,8 @@ func New(c codes.Code, msg string, details ...string) error {
 	if c == codes.OK {
 		return nil
 	}
-	err := &Error{Code: int32(c), Message: msg, Details: append([]string{}, details...)}
-	return (*statusError)(err)
+	err := &Status{Code: int32(c), Message: msg, Details: append([]string{}, details...)}
+	return &statusError{err}
 }
 
 // WriteError writes json encoded error response
@@ -61,53 +74,46 @@ func New(c codes.Code, msg string, details ...string) error {
 func WriteError(ctx context.Context, req *http.Request, w http.ResponseWriter, err error) {
 	// fmt.Printf("err to convert: %#v\n", err)
 	w.Header().Set("Content-Type", "application/json")
-	errt, ok := err.(*statusError)
+	errn, _ := FromError(err)
 	var status int
-	if ok {
-		errn := (*Error)(errt)
-		switch codes.Code(errn.Code) {
-		case codes.OK:
-			status = http.StatusOK
-		case codes.Canceled:
-			status = http.StatusRequestTimeout
-		case codes.Unknown:
-			status = http.StatusInternalServerError
-		case codes.InvalidArgument:
-			status = http.StatusBadRequest
-		case codes.DeadlineExceeded:
-			status = http.StatusGatewayTimeout
-		case codes.NotFound:
-			status = http.StatusNotFound
-		case codes.AlreadyExists:
-			status = http.StatusConflict
-		case codes.PermissionDenied:
-			status = http.StatusForbidden
-		case codes.Unauthenticated:
-			status = http.StatusUnauthorized
-		case codes.ResourceExhausted:
-			status = http.StatusTooManyRequests
-		case codes.FailedPrecondition:
-			status = http.StatusPreconditionFailed
-		case codes.Aborted:
-			status = http.StatusConflict
-		case codes.OutOfRange:
-			status = http.StatusBadRequest
-		case codes.Unimplemented:
-			status = http.StatusNotImplemented
-		case codes.Internal:
-			status = http.StatusInternalServerError
-		case codes.Unavailable:
-			status = http.StatusServiceUnavailable
-		case codes.DataLoss:
-			status = http.StatusInternalServerError
-		}
-		w.WriteHeader(status)
-		enc := json.NewEncoder(w)
-		errn.Code = int32(status)
-		enc.Encode(*errn)
-		return
+	switch codes.Code(errn.Code) {
+	case codes.OK:
+		status = http.StatusOK
+	case codes.Canceled:
+		status = http.StatusRequestTimeout
+	case codes.Unknown:
+		status = http.StatusInternalServerError
+	case codes.InvalidArgument:
+		status = http.StatusBadRequest
+	case codes.DeadlineExceeded:
+		status = http.StatusGatewayTimeout
+	case codes.NotFound:
+		status = http.StatusNotFound
+	case codes.AlreadyExists:
+		status = http.StatusConflict
+	case codes.PermissionDenied:
+		status = http.StatusForbidden
+	case codes.Unauthenticated:
+		status = http.StatusUnauthorized
+	case codes.ResourceExhausted:
+		status = http.StatusTooManyRequests
+	case codes.FailedPrecondition:
+		status = http.StatusPreconditionFailed
+	case codes.Aborted:
+		status = http.StatusConflict
+	case codes.OutOfRange:
+		status = http.StatusBadRequest
+	case codes.Unimplemented:
+		status = http.StatusNotImplemented
+	case codes.Internal:
+		status = http.StatusInternalServerError
+	case codes.Unavailable:
+		status = http.StatusServiceUnavailable
+	case codes.DataLoss:
+		status = http.StatusInternalServerError
 	}
-	w.WriteHeader(500)
+	w.WriteHeader(status)
 	enc := json.NewEncoder(w)
-	enc.Encode(Error{Code: int32(codes.Internal), Message: err.Error()})
+	errn.Code = int32(status)
+	enc.Encode(errn)
 }

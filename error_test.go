@@ -29,7 +29,7 @@ func TestNewError(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Return nil",
+			name: "Return no error",
 			args: args{
 				c:       codes.OK,
 				msg:     "No error",
@@ -40,7 +40,7 @@ func TestNewError(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := NewError(tt.args.c, tt.args.msg, tt.args.details...); (err != nil) != tt.wantErr {
+			if err := New(tt.args.c, tt.args.msg, tt.args.details...); (err != nil) != tt.wantErr {
 				t.Errorf("NewError() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -49,15 +49,15 @@ func TestNewError(t *testing.T) {
 
 func TestFromError(t *testing.T) {
 	perr := errors.New("New error")
-	nerr := &Error{Code: int32(codes.Unknown), Message: perr.Error()}
-	noerr := &Error{Code: int32(codes.OK)}
+	nerr := &Status{Code: int32(codes.Unknown), Message: perr.Error(), Details: []string{}}
+	noerr := &Status{Code: int32(codes.OK), Details: []string{}}
 	type args struct {
 		err error
 	}
 	tests := []struct {
 		name  string
 		args  args
-		want  *Error
+		want  *Status
 		want1 bool
 	}{
 		{
