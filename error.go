@@ -1,7 +1,6 @@
 package errorpb
 
 import (
-	context "context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -71,7 +70,7 @@ func New(c codes.Code, msg string, details ...string) error {
 
 // WriteError writes json encoded error response
 // Header "Content-Type" is set to "application/json"
-func WriteError(ctx context.Context, req *http.Request, w http.ResponseWriter, err error) {
+func WriteError(req *http.Request, w http.ResponseWriter, err error) {
 	// fmt.Printf("err to convert: %#v\n", err)
 	w.Header().Set("Content-Type", "application/json")
 	errn, _ := FromError(err)
