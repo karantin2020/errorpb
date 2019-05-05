@@ -49,14 +49,14 @@ func (m *Status) WithDetails(d string) *Status {
 }
 
 // FromError returns *Status from err
-func FromError(err error) (*Status, bool) {
+func FromError(err error) *Status {
 	if err == nil {
-		return &Status{Code: int32(codes.OK), Details: []string{}}, true
+		return &Status{Code: int32(codes.OK), Details: []string{}}
 	}
 	if se, ok := err.(*statusError); ok {
-		return se.s, true
+		return se.s
 	}
-	return &Status{Code: int32(codes.Unknown), Message: err.Error(), Details: []string{}}, false
+	return &Status{Code: int32(codes.Unknown), Message: err.Error(), Details: []string{}}
 }
 
 // New returns new error
@@ -73,7 +73,7 @@ func New(c codes.Code, msg string, details ...string) error {
 func WriteError(req *http.Request, w http.ResponseWriter, err error) {
 	// fmt.Printf("err to convert: %#v\n", err)
 	w.Header().Set("Content-Type", "application/json")
-	errn, _ := FromError(err)
+	errn := FromError(err)
 	var status int
 	switch codes.Code(errn.Code) {
 	case codes.OK:
