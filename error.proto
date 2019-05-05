@@ -2,9 +2,11 @@ syntax = "proto3";
 
 package errorpb;
 
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
 // Error describes response if service responses with error
 message Error {
-  int32           code    = 1;
-  string          message = 2;
-  repeated string details = 3;
+  int32           code    = 1 [(gogoproto.jsontag) = "code"];
+  string          message = 2 [(gogoproto.jsontag) = "message"];
+  repeated string details = 3 [(gogoproto.jsontag) = "details"];
 };
