@@ -55,36 +55,30 @@ func TestFromError(t *testing.T) {
 		err error
 	}
 	tests := []struct {
-		name  string
-		args  args
-		want  *Status
-		want1 bool
+		name string
+		args args
+		want *Status
 	}{
 		{
 			name: "Return error",
 			args: args{
 				err: perr,
 			},
-			want:  nerr,
-			want1: false,
+			want: nerr,
 		},
 		{
 			name: "Return no error",
 			args: args{
 				err: nil,
 			},
-			want:  noerr,
-			want1: true,
+			want: noerr,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, got1 := FromError(tt.args.err)
+			got := FromError(tt.args.err)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("FromError() got = %v, want %v", got, tt.want)
-			}
-			if got1 != tt.want1 {
-				t.Errorf("FromError() got1 = %v, want %v", got1, tt.want1)
 			}
 		})
 	}

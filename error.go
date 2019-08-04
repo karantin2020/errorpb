@@ -68,6 +68,19 @@ func New(c codes.Code, msg string, details ...string) error {
 	return &statusError{err}
 }
 
+// Wrap returns new error
+func Wrap(err error, c codes.Code, msg string) error {
+	if c == codes.OK || err == nil {
+		return nil
+	}
+	inErr := &Status{
+		Code:    int32(c),
+		Message: msg,
+		Details: append([]string{}, err.Error()),
+	}
+	return &statusError{inErr}
+}
+
 // WriteError writes json encoded error response
 // Header "Content-Type" is set to "application/json"
 func WriteError(req *http.Request, w http.ResponseWriter, err error) {
